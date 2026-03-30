@@ -1,5 +1,5 @@
 # Estágio de Compilação
-FROM rust:1.77-slim AS builder
+FROM rust:1.85-slim AS builder
 
 WORKDIR /app
 COPY . .
