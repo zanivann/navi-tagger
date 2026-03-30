@@ -8,19 +8,21 @@
         .card { background: #161616; padding: 25px; border-radius: 10px; border: 1px solid #252525; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         h1 { margin: 0 0 20px 0; font-size: 1.5rem; color: #fff; border-bottom: 1px solid #252525; padding-bottom: 10px; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 0.7rem; color: #555; text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
-        input { width: 100%; padding: 10px; background: #1d1d1d; border: 1px solid #2d2d2d; color: #fff; border-radius: 4px; box-sizing: border-box; }
+        label { display: block; font-size: 0.65rem; color: #555; text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
+        input { width: 100%; padding: 8px; background: #1d1d1d; border: 1px solid #2d2d2d; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 0.9rem; }
         .flex { display: flex; gap: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         button { background: #0066cc; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; }
         button:hover { background: #0052a3; }
         button.secondary { background: #2d2d2d; width: auto; }
         #preview { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #252525; }
         .log { margin-top: 15px; font-family: monospace; font-size: 0.75rem; color: #00ff00; background: #000; padding: 10px; border-radius: 4px; display: none; }
+        .cover-box { width: 150px; height: 150px; border-radius: 6px; border: 1px solid #333; object-fit: cover; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>Navi-Tagger <span style="color:#444">v2.2</span></h1>
+        <h1>Navi-Tagger <span style="color:#444">v2.3</span></h1>
         <div class="form-group">
             <label>Arquivo Alvo</label>
             <div class="flex">
@@ -30,48 +32,85 @@
         </div>
         <div class="form-group">
             <label>Apple Music ID</label>
-            <input type="text" id="appleId" placeholder="ID da Faixa">
+            <input type="text" id="appleId" placeholder="Ex: 1440857781">
             <button style="margin-top:10px" onclick="fetchMeta()">Consultar iTunes</button>
         </div>
+
         <div id="preview">
-            <div class="flex" style="margin-bottom:15px">
-                <img id="coverArt" style="width:120px; height:120px; border-radius:6px; border:1px solid #333">
-                <div style="flex:1">
-                    <label>Título</label><input type="text" id="title">
-                    <label style="margin-top:8px">Artista</label><input type="text" id="artist">
+            <div class="flex" style="margin-bottom:20px">
+                <img id="coverArt" class="cover-box">
+                <div style="flex:1" class="grid">
+                    <div class="form-group"><label>Título</label><input type="text" id="title"></div>
+                    <div class="form-group"><label>Artista</label><input type="text" id="artist"></div>
+                    <div class="form-group"><label>Álbum</label><input type="text" id="album"></div>
+                    <div class="form-group"><label>Gênero</label><input type="text" id="genre"></div>
+                    <div class="form-group"><label>Ano</label><input type="text" id="year"></div>
+                    <div class="form-group"><label>Faixa / Total</label>
+                        <div class="flex"><input type="text" id="tNum"> <input type="text" id="tTot"></div>
+                    </div>
                 </div>
             </div>
-            <button onclick="apply()" style="background:#28a745">Injetar Metadados</button>
+            <input type="hidden" id="dNum"> <input type="hidden" id="dTot">
+            <button onclick="apply()" style="background:#28a745">Injetar Metadados Totais</button>
         </div>
         <div id="log" class="log"></div>
     </div>
+
     <script>
         async function browse() { 
             const r = await fetch('/api/browse'); 
             const p = await r.text(); 
             if(p) document.getElementById('filePath').value = p; 
         }
+
         async function fetchMeta() {
             const id = document.getElementById('appleId').value;
+            const log = document.getElementById('log');
+            log.style.display = 'block';
+            log.innerText = "[JARVIS] Consultando Apple Music...";
+            
             const r = await fetch(`/api/preview?id=${id}`);
-            if(!r.ok) return;
+            if(!r.ok) {
+                log.innerText = "[JARVIS] ID não encontrado.";
+                return;
+            }
             const d = await r.json();
+            
             document.getElementById('title').value = d.trackName;
             document.getElementById('artist').value = d.artistName;
+            document.getElementById('album').value = d.album;
+            document.getElementById('genre').value = d.genre;
+            document.getElementById('year').value = d.year;
+            document.getElementById('tNum').value = d.trackNumber;
+            document.getElementById('tTot').value = d.trackTotal;
+            document.getElementById('dNum').value = d.discNumber;
+            document.getElementById('dTot').value = d.discTotal;
             document.getElementById('coverArt').src = d.artworkUrl;
+            
             document.getElementById('preview').style.display = 'block';
-            document.getElementById('log').style.display = 'block';
-            document.getElementById('log').innerText = "[JARVIS] Metadados carregados.";
+            log.innerText = "[JARVIS] Dados coletados. Pronto para injeção.";
         }
+
         async function apply() {
             const p = {
                 file_path: document.getElementById('filePath').value,
                 title: document.getElementById('title').value,
                 artist: document.getElementById('artist').value,
+                album: document.getElementById('album').value,
+                genre: document.getElementById('genre').value,
+                year: document.getElementById('year').value,
+                track_num: document.getElementById('tNum').value,
+                track_total: document.getElementById('tTot').value,
+                disc_num: document.getElementById('dNum').value,
+                disc_total: document.getElementById('dTot').value,
                 artwork_url: document.getElementById('coverArt').src
             };
-            const r = await fetch('/api/apply', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p)});
-            document.getElementById('log').innerText = r.ok ? "[JARVIS] Purificação concluída." : "[JARVIS] Erro físico.";
+            const r = await fetch('/api/apply', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify(p)
+            });
+            document.getElementById('log').innerText = r.ok ? "[JARVIS] Purificação concluída com sucesso." : "[JARVIS] Falha na injeção de hardware.";
         }
     </script>
 </body>

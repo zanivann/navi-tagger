@@ -11,9 +11,50 @@ use std::thread;
 
 #[derive(Deserialize)] struct PreviewQuery { id: String }
 #[derive(Deserialize)] struct ItunesResponse { results: Vec<TrackInfo> }
-#[derive(Deserialize)] #[allow(non_snake_case)] struct TrackInfo { trackName: String, artistName: String, artworkUrl100: String }
-#[derive(Serialize)] struct PreviewResponse { trackName: String, artistName: String, artworkUrl: String }
-#[derive(Deserialize)] struct ApplyPayload { file_path: String, title: String, artist: String, artwork_url: String }
+
+#[derive(Deserialize)] 
+#[allow(non_snake_case)] 
+struct TrackInfo { 
+    trackName: String, 
+    artistName: String, 
+    collectionName: Option<String>,
+    primaryGenreName: Option<String>,
+    releaseDate: Option<String>,
+    trackNumber: Option<u32>,
+    trackCount: Option<u32>,
+    discNumber: Option<u32>,
+    discCount: Option<u32>,
+    artworkUrl100: String 
+}
+
+#[derive(Serialize)] 
+struct PreviewResponse { 
+    trackName: String, 
+    artistName: String, 
+    album: String,
+    genre: String,
+    year: String,
+    trackNumber: u32,
+    trackTotal: u32,
+    discNumber: u32,
+    discTotal: u32,
+    artworkUrl: String 
+}
+
+#[derive(Deserialize)] 
+struct ApplyPayload { 
+    file_path: String, 
+    title: String, 
+    artist: String, 
+    album: String,
+    genre: String,
+    year: String,
+    track_num: String,
+    track_total: String,
+    disc_num: String,
+    disc_total: String,
+    artwork_url: String 
+}
 
 fn main() {
     thread::spawn(|| {
@@ -36,9 +77,9 @@ fn main() {
             let quit_i = MenuItem::with_id(app, "quit", "Fechar", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&quit_i])?;
             let _tray = TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone()) // Força o uso do ícone padrão
+                .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .show_menu_on_left_click(true) // Essencial para macOS
+                .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| {
                     if event.id == "quit" { app.exit(0); }
                 })
@@ -57,10 +98,18 @@ async fn api_preview(Query(q): Query<PreviewQuery>) -> impl IntoResponse {
     if let Ok(res) = c.get(&url).send().await {
         if let Ok(js) = res.json::<ItunesResponse>().await {
             if let Some(t) = js.results.first() {
+                let year = t.releaseDate.as_deref().unwrap_or("").chars().take(4).collect::<String>();
                 return Json(PreviewResponse {
                     trackName: t.trackName.clone(),
                     artistName: t.artistName.clone(),
-                    artworkUrl: t.artworkUrl100.replace("100x100bb", "600x600bb"),
+                    album: t.collectionName.clone().unwrap_or_default(),
+                    genre: t.primaryGenreName.clone().unwrap_or_default(),
+                    year,
+                    trackNumber: t.trackNumber.unwrap_or(0),
+                    trackTotal: t.trackCount.unwrap_or(0),
+                    discNumber: t.discNumber.unwrap_or(1),
+                    discTotal: t.discCount.unwrap_or(1),
+                    artworkUrl: t.artworkUrl100.replace("100x100bb", "1000x1000bb"),
                 }).into_response();
             }
         }
@@ -74,9 +123,19 @@ async fn api_apply(Json(p): Json<ApplyPayload>) -> impl IntoResponse {
     let mut f = Probe::open(&p.file_path).unwrap().read().unwrap();
     f.clear();
     let mut tag = Tag::new(f.file_type().primary_tag_type());
+    
     tag.insert_text(ItemKey::TrackTitle, p.title);
     tag.insert_text(ItemKey::TrackArtist, p.artist);
+    tag.insert_text(ItemKey::AlbumTitle, p.album);
+    tag.insert_text(ItemKey::Genre, p.genre);
+    tag.insert_text(ItemKey::RecordingDate, p.year);
+    tag.insert_text(ItemKey::TrackNumber, p.track_num);
+    tag.insert_text(ItemKey::TrackTotal, p.track_total);
+    tag.insert_text(ItemKey::DiscNumber, p.disc_num);
+    tag.insert_text(ItemKey::DiscTotal, p.disc_total);
+    
     tag.push_picture(Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Jpeg), None, img.to_vec()));
+    
     f.insert_tag(tag);
     f.save_to_path(&p.file_path, WriteOptions::new()).unwrap();
     axum::http::StatusCode::OK
