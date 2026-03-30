@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Query, Json},
+    extract::{Json, Query},
     response::{Html, IntoResponse},
     routing::{get, post},
     Router,
@@ -95,13 +95,13 @@ async fn serve_ui() -> Html<&'static str> {
 async fn api_preview(Query(params): Query<PreviewQuery>) -> impl IntoResponse {
     let client = Client::new();
     let url = format!("https://itunes.apple.com/lookup?id={}", params.id);
-    
+
     if let Ok(res) = client.get(&url).send().await {
         if let Ok(json) = res.json::<ItunesResponse>().await {
             if let Some(track) = json.results.first() {
                 let hires_url = track.artworkUrl100.replace("100x100bb", "600x600bb");
                 let year = track.releaseDate.chars().take(4).collect::<String>();
-                
+
                 return Json(PreviewResponse {
                     trackName: track.trackName.clone(),
                     artistName: track.artistName.clone(),
@@ -114,7 +114,8 @@ async fn api_preview(Query(params): Query<PreviewQuery>) -> impl IntoResponse {
                     discNumber: track.discNumber,
                     copyright: track.copyright.clone().unwrap_or_default(),
                     isExplicit: track.trackExplicitness == "explicit",
-                }).into_response();
+                })
+                .into_response();
             }
         }
     }
@@ -123,7 +124,7 @@ async fn api_preview(Query(params): Query<PreviewQuery>) -> impl IntoResponse {
 
 async fn api_apply(Json(payload): Json<ApplyPayload>) -> impl IntoResponse {
     let client = Client::new();
-    
+
     let img_bytes = match client.get(&payload.artwork_url).send().await {
         Ok(resp) => resp.bytes().await.unwrap_or_default(),
         Err(_) => return axum::http::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -149,7 +150,7 @@ async fn api_apply(Json(payload): Json<ApplyPayload>) -> impl IntoResponse {
     tag.insert_text(ItemKey::DiscNumber, payload.disc_number.to_string());
     tag.insert_text(ItemKey::CopyrightMessage, payload.copyright);
     tag.insert_text(ItemKey::Comment, payload.comment);
-    
+
     let picture = Picture::new_unchecked(
         PictureType::CoverFront,
         Some(MimeType::Jpeg),
@@ -157,12 +158,12 @@ async fn api_apply(Json(payload): Json<ApplyPayload>) -> impl IntoResponse {
         img_bytes.to_vec(),
     );
     tag.push_picture(picture);
-    
+
     tagged_file.insert_tag(tag);
-    
+
     match tagged_file.save_to_path(&payload.file_path, WriteOptions::new()) {
         Ok(_) => axum::http::StatusCode::OK.into_response(),
-        Err(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(_) => ax_extract::http::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 
