@@ -1,0 +1,10 @@
+services:
+  navi-tagger:
+    build: .
+    container_name: navi-tagger
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mapeie sua pasta de músicas aqui para que o container a enxergue
+      - /caminho/para/sua/musica:/data/music
+    restart: unless-stopped
