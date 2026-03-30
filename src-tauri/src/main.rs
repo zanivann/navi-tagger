@@ -146,15 +146,44 @@ fn main() {
     tauri::Builder::default()
         .setup(|app| {
             use tauri::menu::{Menu, MenuItem};
-            use tauri::tray::TrayIconBuilder;
+            use tauri::tray::{TrayIconBuilder, TrayIconEvent};
+            use tauri::Manager;
+
+            // Criar itens de menu
+            let show_i = MenuItem::with_id(app, "show", "Mostrar Interface", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Fechar", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&quit_i])?;
+            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .show_menu_on_left_click(true)
-                .on_menu_event(|app, event| { if event.id == "quit" { app.exit(0); } })
+                .show_menu_on_left_click(false) // Deixamos o clique esquerdo para abrir a janela
+                .on_menu_event(|app, event| {
+                    match event.id.as_ref() {
+                        "quit" => { app.exit(0); }
+                        "show" => {
+                            let window = app.get_webview_window("main").unwrap();
+                            window.show().unwrap();
+                            window.set_focus().unwrap();
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
                 .build(app)?;
+
+            // FORÇAR APARIÇÃO NA INICIALIZAÇÃO
+            let main_window = app.get_webview_window("main").unwrap();
+            main_window.show().unwrap();
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

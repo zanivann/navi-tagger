@@ -1,17 +1,17 @@
 {
   "productName": "Navi-Tagger",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "identifier": "com.zanivann.navitagger",
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "",
-    "devUrl": "http://localhost:3000",
+    "devUrl": "../src",
     "frontendDist": "../src"
   },
   "app": {
-    "withGlobalTauri": false,
+    "withGlobalTauri": true,
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' https://*.mzstatic.com https://*.apple.com data:; script-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost"
     }
   },
   "bundle": {
