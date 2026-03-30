@@ -21,7 +21,7 @@
 </head>
 <body>
     <div class="card">
-        <h1>Navi-Tagger <span style="color:#444">v2.2.3</span></h1>
+        <h1>Navi-Tagger <span style="color:#444">v2.3.0</span></h1>
         <div class="form-group">
             <label>Arquivo Alvo</label>
             <div class="flex">
@@ -59,10 +59,13 @@
     </div>
 
     <script>
+        const { invoke } = window.__TAURI__.core;
+
         async function browse() { 
-            const r = await fetch('/api/browse'); 
-            const p = await r.text(); 
-            if(p) document.getElementById('filePath').value = p; 
+            try {
+                const path = await invoke('browse_file');
+                if(path) document.getElementById('filePath').value = path; 
+            } catch (e) { alert(e); }
         }
 
         async function autoSearch() {
@@ -70,56 +73,54 @@
             if(!path) return;
             const log = document.getElementById('log');
             log.style.display = 'block';
-            log.innerText = "[JARVIS] Iniciando protocolo de detecção...";
+            log.innerText = "[JARVIS] Iniciando protocolo nativo de detecção...";
 
-            // 1. Tentar ler tags internas
-            const tr = await fetch(`/api/read_tags?path=${encodeURIComponent(path)}`);
-            const tags = await tr.json();
-            let query = (tags.artist && tags.title) ? `${tags.artist} ${tags.title}` : path.split('/').pop().replace(/\.[^/.]+$/, "");
+            try {
+                const tags = await invoke('read_existing_tags', { path });
+                let query = (tags.artist && tags.title) ? `${tags.artist} ${tags.title}` : path.split('/').pop().replace(/\.[^/.]+$/, "");
 
-            log.innerText = `[JARVIS] Buscando catálogo por: ${query}`;
+                log.innerText = `[JARVIS] Buscando catálogo por: ${query}`;
+                const id = await invoke('search_itunes', { term: query });
 
-            // 2. Buscar na Apple
-            const sr = await fetch(`/api/search?term=${encodeURIComponent(query)}`);
-            const id = await sr.text();
-
-            if(id) {
                 document.getElementById('appleId').value = id;
-                log.innerText = `[JARVIS] ID ${id} identificado. Extraindo inventário...`;
+                log.innerText = `[JARVIS] ID ${id} identificado.`;
                 fetchMeta();
-            } else {
-                log.innerText = "[JARVIS] Falha na heurística. Requer entrada manual.";
+            } catch (e) {
+                log.innerText = "[JARVIS] Falha na heurística: " + e;
             }
         }
 
         async function fetchMeta() {
             const id = document.getElementById('appleId').value;
-            const r = await fetch(`/api/preview?id=${id}`);
-            if(!r.ok) return;
-            const d = await r.json();
-            document.getElementById('title').value = d.trackName;
-            document.getElementById('artist').value = d.artistName;
-            document.getElementById('album').value = d.album;
-            document.getElementById('genre').value = d.genre;
-            document.getElementById('year').value = d.year;
-            document.getElementById('fullDate').value = d.fullDate;
-            document.getElementById('label').value = d.label;
-            document.getElementById('tNum').value = d.trackNumber;
-            document.getElementById('tTot').value = d.trackTotal;
-            document.getElementById('dNum').value = d.discNumber;
-            document.getElementById('dTot').value = d.discTotal;
-            document.getElementById('coverArt').src = d.artworkUrl;
-            document.getElementById('preview').style.display = 'block';
+            try {
+                const d = await invoke('get_preview', { id });
+                document.getElementById('title').value = d.title;
+                document.getElementById('artist').value = d.artist;
+                document.getElementById('album').value = d.album;
+                document.getElementById('genre').value = d.genre;
+                document.getElementById('year').value = d.year;
+                document.getElementById('fullDate').value = d.full_date;
+                document.getElementById('label').value = d.label;
+                document.getElementById('tNum').value = d.track_num;
+                document.getElementById('tTot').value = d.track_total;
+                document.getElementById('dNum').value = d.disc_num;
+                document.getElementById('dTot').value = d.disc_total;
+                document.getElementById('coverArt').src = d.artwork_url;
+                document.getElementById('preview').style.display = 'block';
+            } catch (e) {
+                alert("Erro ao consultar: " + e);
+            }
         }
 
         async function apply() {
-            const p = {
-                file_path: document.getElementById('filePath').value,
+            const path = document.getElementById('filePath').value;
+            const data = {
                 title: document.getElementById('title').value,
                 artist: document.getElementById('artist').value,
                 album: document.getElementById('album').value,
                 genre: document.getElementById('genre').value,
                 year: document.getElementById('year').value,
+                full_date: document.getElementById('fullDate').value,
                 label: document.getElementById('label').value,
                 track_num: document.getElementById('tNum').value,
                 track_total: document.getElementById('tTot').value,
@@ -127,8 +128,13 @@
                 disc_total: document.getElementById('dTot').value,
                 artwork_url: document.getElementById('coverArt').src
             };
-            const r = await fetch('/api/apply', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p)});
-            document.getElementById('log').innerText = r.ok ? "[JARVIS] Purificação concluída." : "[JARVIS] Erro na injeção.";
+            
+            try {
+                await invoke('apply_tags', { path, data });
+                document.getElementById('log').innerText = "[JARVIS] Purificação concluída via IPC.";
+            } catch (e) {
+                document.getElementById('log').innerText = "[JARVIS] Erro na injeção: " + e;
+            }
         }
     </script>
 </body>
