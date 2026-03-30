@@ -3,13 +3,13 @@ name: "Publish Release"
 on:
   push:
     tags:
-      - 'v*' # Dispara apenas quando o senhor criar uma tag (ex: v2.2.0)
+      - 'v*'
 
 jobs:
   publish-tauri:
     permissions:
       contents: write
-    runs-on: macos-latest # Necessário para gerar o .dmg do Apple Silicon
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -18,20 +18,14 @@ jobs:
         with:
           targets: aarch64-apple-darwin
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
-
       - name: build and release
-        uses: tauri-apps/tauri-action@v2
+        uses: tauri-apps/tauri-action@v0 # <-- AQUI ESTÁ A CORREÇÃO CIRÚRGICA
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__ # O Tauri pegará a versão do tauri.conf.json
+          tagName: v__VERSION__
           releaseName: "Navi-Tagger v__VERSION__"
-          releaseBody: "Build nativo forjado para Apple Silicon."
-          releaseDraft: true
+          releaseBody: "Build nativo para Apple Silicon (M4)."
+          releaseDraft: false # Já sai publicado
           prerelease: false
           args: --target aarch64-apple-darwin
