@@ -131,7 +131,7 @@ async fn api_apply(Json(payload): Json<ApplyPayload>) -> impl IntoResponse {
 
     let mut tagged_file = match Probe::open(&payload.file_path).and_then(|p| p.read()) {
         Ok(file) => file,
-        Err(_) => return axum::http::StatusCode::BAD_REQUEST.into_response(),
+        Err(_) => return ax_extract::http::StatusCode::BAD_REQUEST.into_response(),
     };
 
     tagged_file.clear();
@@ -173,7 +173,9 @@ async fn api_browse() -> impl IntoResponse {
             .arg("POSIX path of (choose file)")
             .output();
 
-        if let Ok(cmd_res) = output && cmd_res.status.success() {
+        if let Ok(cmd_res) = output
+            && cmd_res.status.success()
+        {
             let path = String::from_utf8_lossy(&cmd_res.stdout).trim().to_string();
             return path.into_response();
         }
