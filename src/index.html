@@ -14,15 +14,14 @@
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         button { background: #0066cc; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; }
         button:hover { background: #0052a3; }
-        button.secondary { background: #2d2d2d; width: auto; }
+        button.secondary { background: #2d2d2d; width: auto; font-size: 0.8rem; }
         #preview { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #252525; }
         .log { margin-top: 15px; font-family: monospace; font-size: 0.75rem; color: #00ff00; background: #000; padding: 10px; border-radius: 4px; display: none; }
-        .cover-box { width: 180px; height: 180px; border-radius: 8px; border: 1px solid #333; object-fit: cover; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>Navi-Tagger <span style="color:#444">v2.2.2</span></h1>
+        <h1>Navi-Tagger <span style="color:#444">v2.2.3</span></h1>
         <div class="form-group">
             <label>Arquivo Alvo</label>
             <div class="flex">
@@ -32,13 +31,16 @@
         </div>
         <div class="form-group">
             <label>Apple Music ID</label>
-            <input type="text" id="appleId" placeholder="Ex: 1440857781">
+            <div class="flex">
+                <input type="text" id="appleId" placeholder="ID da Faixa">
+                <button class="secondary" onclick="autoSearch()">Auto-Detectar</button>
+            </div>
             <button style="margin-top:10px" onclick="fetchMeta()">Consultar iTunes</button>
         </div>
 
         <div id="preview">
             <div class="flex" style="margin-bottom:20px">
-                <img id="coverArt" class="cover-box">
+                <img id="coverArt" style="width:180px; height:180px; border-radius:8px; border:1px solid #333; object-fit:cover">
                 <div style="flex:1" class="grid">
                     <div class="form-group"><label>Título</label><input type="text" id="title"></div>
                     <div class="form-group"><label>Artista</label><input type="text" id="artist"></div>
@@ -46,16 +48,12 @@
                     <div class="form-group"><label>Gênero</label><input type="text" id="genre"></div>
                     <div class="form-group"><label>Ano</label><input type="text" id="year"></div>
                     <div class="form-group"><label>Data Completa</label><input type="text" id="fullDate"></div>
-                    <div class="form-group" style="grid-column: span 2;"><label>Gravadora / Selo</label><input type="text" id="label"></div>
-                    <div class="form-group"><label>Faixa / Total</label>
-                        <div class="flex"><input type="text" id="tNum"> <input type="text" id="tTot"></div>
-                    </div>
-                    <div class="form-group"><label>Disco / Total</label>
-                        <div class="flex"><input type="text" id="dNum"> <input type="text" id="dTot"></div>
-                    </div>
+                    <div class="form-group" style="grid-column: span 2;"><label>Gravadora</label><input type="text" id="label"></div>
+                    <div class="form-group"><label>Faixa / Total</label><div class="flex"><input type="text" id="tNum"><input type="text" id="tTot"></div></div>
+                    <div class="form-group"><label>Disco / Total</label><div class="flex"><input type="text" id="dNum"><input type="text" id="dTot"></div></div>
                 </div>
             </div>
-            <button onclick="apply()" style="background:#28a745">Injetar Metadados Totais</button>
+            <button onclick="apply()" style="background:#28a745">Injetar Metadados</button>
         </div>
         <div id="log" class="log"></div>
     </div>
@@ -67,19 +65,38 @@
             if(p) document.getElementById('filePath').value = p; 
         }
 
-        async function fetchMeta() {
-            const id = document.getElementById('appleId').value;
+        async function autoSearch() {
+            const path = document.getElementById('filePath').value;
+            if(!path) return;
             const log = document.getElementById('log');
             log.style.display = 'block';
-            log.innerText = "[JARVIS] Acessando banco de dados da Apple...";
-            
-            const r = await fetch(`/api/preview?id=${id}`);
-            if(!r.ok) {
-                log.innerText = "[JARVIS] Erro: ID inexistente ou falha de rede.";
-                return;
+            log.innerText = "[JARVIS] Iniciando protocolo de detecção...";
+
+            // 1. Tentar ler tags internas
+            const tr = await fetch(`/api/read_tags?path=${encodeURIComponent(path)}`);
+            const tags = await tr.json();
+            let query = (tags.artist && tags.title) ? `${tags.artist} ${tags.title}` : path.split('/').pop().replace(/\.[^/.]+$/, "");
+
+            log.innerText = `[JARVIS] Buscando catálogo por: ${query}`;
+
+            // 2. Buscar na Apple
+            const sr = await fetch(`/api/search?term=${encodeURIComponent(query)}`);
+            const id = await sr.text();
+
+            if(id) {
+                document.getElementById('appleId').value = id;
+                log.innerText = `[JARVIS] ID ${id} identificado. Extraindo inventário...`;
+                fetchMeta();
+            } else {
+                log.innerText = "[JARVIS] Falha na heurística. Requer entrada manual.";
             }
+        }
+
+        async function fetchMeta() {
+            const id = document.getElementById('appleId').value;
+            const r = await fetch(`/api/preview?id=${id}`);
+            if(!r.ok) return;
             const d = await r.json();
-            
             document.getElementById('title').value = d.trackName;
             document.getElementById('artist').value = d.artistName;
             document.getElementById('album').value = d.album;
@@ -92,9 +109,7 @@
             document.getElementById('dNum').value = d.discNumber;
             document.getElementById('dTot').value = d.discTotal;
             document.getElementById('coverArt').src = d.artworkUrl;
-            
             document.getElementById('preview').style.display = 'block';
-            log.innerText = "[JARVIS] Inventário coletado.";
         }
 
         async function apply() {
@@ -112,12 +127,8 @@
                 disc_total: document.getElementById('dTot').value,
                 artwork_url: document.getElementById('coverArt').src
             };
-            const r = await fetch('/api/apply', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify(p)
-            });
-            document.getElementById('log').innerText = r.ok ? "[JARVIS] Purificação concluída. Arquivo assinado." : "[JARVIS] Erro crítico na injeção.";
+            const r = await fetch('/api/apply', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p)});
+            document.getElementById('log').innerText = r.ok ? "[JARVIS] Purificação concluída." : "[JARVIS] Erro na injeção.";
         }
     </script>
 </body>
