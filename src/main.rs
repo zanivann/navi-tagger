@@ -1,7 +1,7 @@
 use axum::{
     Router,
     extract::{Json, Query},
-    response::{Html, IntoResponse},
+    response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
 use lofty::config::WriteOptions;
@@ -11,7 +11,6 @@ use lofty::probe::Probe;
 use lofty::tag::{ItemKey, Tag};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 use std::process::Command;
 
 #[derive(Deserialize)]
@@ -74,22 +73,30 @@ struct ApplyPayload {
 
 #[tokio::main]
 async fn main() {
-    println!("Jarvis: Iniciando Servidor Navi-Tagger na porta 3000...");
+    println!("Jarvis: Iniciando Servidor Navi-Tagger nativo...");
     println!("Acesse: http://localhost:3000");
 
     let app = Router::new()
         .route("/", get(serve_ui))
         .route("/api/preview", get(api_preview))
         .route("/api/apply", post(api_apply))
-        .route("/api/browse", get(api_browse));
+        .route("/api/browse", get(api_browse))
+        .route("/icon.png", get(serve_icon));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
 async fn serve_ui() -> Html<&'static str> {
     Html(include_str!("index.html"))
+}
+
+async fn serve_icon() -> impl IntoResponse {
+    let icon_bytes = include_bytes!("icon.png");
+    Response::builder()
+        .header("Content-Type", "image/png")
+        .body(axum::body::Body::from(icon_bytes.to_vec()))
+        .unwrap()
 }
 
 async fn api_preview(Query(params): Query<PreviewQuery>) -> impl IntoResponse {
@@ -131,7 +138,7 @@ async fn api_apply(Json(payload): Json<ApplyPayload>) -> impl IntoResponse {
 
     let mut tagged_file = match Probe::open(&payload.file_path).and_then(|p| p.read()) {
         Ok(file) => file,
-        Err(_) => return ax_extract::http::StatusCode::BAD_REQUEST.into_response(),
+        Err(_) => return axum::http::StatusCode::BAD_REQUEST.into_response(),
     };
 
     tagged_file.clear();

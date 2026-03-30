@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Jarvis | Navi-Tagger Pro</title>
+    <title>Jarvis | Navi-Tagger</title>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -16,9 +16,10 @@
 
         .card {
             background: #1e1e1e;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
         }
 
         .grid {
@@ -35,19 +36,27 @@
         label {
             display: block;
             margin-bottom: 5px;
-            font-size: 0.8rem;
-            color: #888;
+            font-size: 0.75rem;
+            color: #666;
             text-transform: uppercase;
+            font-weight: bold;
         }
 
         input {
             width: 100%;
-            padding: 10px;
-            background: #2c2c2c;
-            border: 1px solid #444;
+            padding: 12px;
+            background: #262626;
+            border: 1px solid #333;
             color: #fff;
-            border-radius: 4px;
+            border-radius: 6px;
             box-sizing: border-box;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            border-color: #007bff;
+            outline: none;
+            background: #2d2d2d;
         }
 
         button {
@@ -55,12 +64,11 @@
             color: white;
             border: none;
             padding: 12px;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
             width: 100%;
             margin-top: 10px;
-            transition: 0.2s;
         }
 
         button:hover {
@@ -70,8 +78,9 @@
         button.apply {
             background: #28a745;
             display: none;
-            height: 60px;
-            font-size: 1.1rem;
+            height: 50px;
+            font-size: 1rem;
+            margin-top: 25px;
         }
 
         button.apply:hover {
@@ -81,55 +90,66 @@
         #preview {
             margin-top: 25px;
             display: none;
-            border-top: 1px solid #333;
-            padding-top: 20px;
+            border-top: 2px solid #333;
+            padding-top: 25px;
         }
 
         .preview-header {
             display: flex;
             gap: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             align-items: center;
         }
 
         #coverArt {
-            width: 150px;
-            height: 150px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            width: 180px;
+            height: 180px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
             object-fit: cover;
+            border: 1px solid #444;
         }
 
         .log {
-            margin-top: 15px;
+            margin-top: 20px;
             padding: 12px;
             background: #000;
-            font-family: monospace;
-            font-size: 0.85rem;
-            border-radius: 4px;
-            color: #0f0;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            color: #00ff00;
             display: none;
-            border-left: 4px solid #0f0;
+            border-left: 4px solid #00ff00;
         }
     </style>
 </head>
 
 <body>
     <div class="card">
-        <h2 style="margin-top:0">Navidrome Tagger <span style="font-weight:normal; color:#666">v2.0</span></h2>
+        <div
+            style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; border-bottom: 2px solid #333; padding-bottom: 15px;">
+            <img src="/icon.png" alt="Navi-Tagger" style="width: 64px; height: 64px; border-radius: 10px;">
+            <div>
+                <h1 style="margin: 0; font-size: 1.8rem; color: #fff;">Navi-Tagger <span
+                        style="font-weight:normal; color:#666">v2.1</span></h1>
+                <p
+                    style="margin: 2px 0 0 0; font-size: 0.85rem; color: #555; text-transform: uppercase; letter-spacing: 1px;">
+                    Operação Nativa Mac Mini M4</p>
+            </div>
+        </div>
 
         <div class="form-group">
-            <label>Caminho do Arquivo</label>
+            <label>Caminho do Arquivo Local</label>
             <div style="display: flex; gap: 10px;">
-                <input type="text" id="filePath" placeholder="/volumes/media/musica.flac" style="flex: 1;">
+                <input type="text" id="filePath" placeholder="/Users/helder/Musica/track.flac" style="flex: 1;">
                 <button type="button" onclick="browseFile()"
-                    style="width: auto; margin: 0; background: #444;">Procurar</button>
+                    style="width: auto; margin: 0; background: #333;">Procurar</button>
             </div>
         </div>
 
         <div class="form-group">
             <label>Apple Music ID</label>
-            <input type="text" id="appleId" placeholder="Ex: 1583004514">
+            <input type="text" id="appleId" placeholder="Ex: 1440879325">
             <button onclick="previewTags()">Inspecionar Metadados</button>
         </div>
 
@@ -146,22 +166,22 @@
                 <div class="form-group"><label>Álbum</label><input type="text" id="album"></div>
                 <div class="form-group"><label>Gênero</label><input type="text" id="genre"></div>
                 <div class="form-group"><label>Ano</label><input type="text" id="year"></div>
-                <div class="form-group"><label>Copyright</label><input type="text" id="copyright"></div>
+                <div class="form-group"><label>Direitos (Copyright)</label><input type="text" id="copyright"></div>
             </div>
 
             <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
                 <div class="form-group"><label>Nº Faixa</label><input type="number" id="trackNum"></div>
                 <div class="form-group"><label>Total Faixas</label><input type="number" id="trackTotal"></div>
-                <div class="form-group"><label>Disco</label><input type="number" id="discNum"></div>
+                <div class="form-group"><label>Nº Disco</label><input type="number" id="discNum"></div>
             </div>
 
             <div class="form-group">
-                <label>Comentário / Tag Especial</label>
+                <label>Selo / Comentário</label>
                 <input type="text" id="comment">
             </div>
 
             <input type="hidden" id="hiresUrl">
-            <button class="apply" id="btnApply" onclick="applyTags()">GRAVAR NO DISCO</button>
+            <button class="apply" id="btnApply" onclick="applyTags()">INJETAR METADADOS E CAPA</button>
         </div>
         <div id="log" class="log"></div>
     </div>
@@ -175,9 +195,9 @@
 
         async function previewTags() {
             const id = document.getElementById('appleId').value;
-            log("Consultando Apple Music API...");
+            log("Conectando ao iTunes Search API...");
             const res = await fetch(`/api/preview?id=${id}`);
-            if (!res.ok) return log("Erro: ID não encontrado ou falha na rede.", true);
+            if (!res.ok) return log("ERRO: ID não encontrado ou falha na Apple.", true);
 
             const data = await res.json();
             document.getElementById('title').value = data.trackName;
@@ -189,13 +209,13 @@
             document.getElementById('trackTotal').value = data.trackTotal;
             document.getElementById('discNum').value = data.discNumber;
             document.getElementById('copyright').value = data.copyright;
-            document.getElementById('comment').value = data.isExplicit ? "Explicit Content" : "Clean";
+            document.getElementById('comment').value = data.isExplicit ? "Explicit Content" : "Clean Version";
             document.getElementById('hiresUrl').value = data.artworkUrl;
             document.getElementById('coverArt').src = data.artworkUrl;
 
             document.getElementById('preview').style.display = 'block';
             document.getElementById('btnApply').style.display = 'block';
-            log("Inspeção concluída. Verifique os campos antes de gravar.");
+            log("Metadados recuperados com sucesso.");
         }
 
         async function applyTags() {
@@ -214,15 +234,15 @@
                 artwork_url: document.getElementById('hiresUrl').value
             };
 
-            log("Iniciando gravação física...");
+            log("Executando protocolo de injeção física...");
             const res = await fetch('/api/apply', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (res.ok) log("SUCESSO: Arquivo atualizado e limpo.");
-            else log("ERRO: Falha ao acessar o arquivo físico.", true);
+            if (res.ok) log("SUCESSO: O arquivo físico foi purificado e atualizado.");
+            else log("ERRO: O arquivo está bloqueado ou o caminho é inválido.", true);
         }
 
         function log(msg, error = false) {
