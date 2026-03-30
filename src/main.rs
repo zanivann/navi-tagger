@@ -1,8 +1,8 @@
 use axum::{
+    Router,
     extract::{Json, Query},
     response::{Html, IntoResponse},
     routing::{get, post},
-    Router,
 };
 use lofty::config::WriteOptions;
 use lofty::file::{AudioFile, TaggedFileExt};
@@ -163,7 +163,7 @@ async fn api_apply(Json(payload): Json<ApplyPayload>) -> impl IntoResponse {
 
     match tagged_file.save_to_path(&payload.file_path, WriteOptions::new()) {
         Ok(_) => axum::http::StatusCode::OK.into_response(),
-        Err(_) => ax_extract::http::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 
