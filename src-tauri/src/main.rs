@@ -24,6 +24,7 @@ struct TrackInfo {
     trackCount: Option<u32>,
     discNumber: Option<u32>,
     discCount: Option<u32>,
+    copyright: Option<String>,
     artworkUrl100: String 
 }
 
@@ -34,6 +35,8 @@ struct PreviewResponse {
     album: String,
     genre: String,
     year: String,
+    fullDate: String,
+    label: String,
     trackNumber: u32,
     trackTotal: u32,
     discNumber: u32,
@@ -49,6 +52,7 @@ struct ApplyPayload {
     album: String,
     genre: String,
     year: String,
+    label: String,
     track_num: String,
     track_total: String,
     disc_num: String,
@@ -98,13 +102,16 @@ async fn api_preview(Query(q): Query<PreviewQuery>) -> impl IntoResponse {
     if let Ok(res) = c.get(&url).send().await {
         if let Ok(js) = res.json::<ItunesResponse>().await {
             if let Some(t) = js.results.first() {
-                let year = t.releaseDate.as_deref().unwrap_or("").chars().take(4).collect::<String>();
+                let full_date = t.releaseDate.clone().unwrap_or_default().split('T').next().unwrap_or("").to_string();
+                let year = full_date.chars().take(4).collect::<String>();
                 return Json(PreviewResponse {
                     trackName: t.trackName.clone(),
                     artistName: t.artistName.clone(),
                     album: t.collectionName.clone().unwrap_or_default(),
                     genre: t.primaryGenreName.clone().unwrap_or_default(),
                     year,
+                    fullDate: full_date,
+                    label: t.copyright.clone().unwrap_or_default(),
                     trackNumber: t.trackNumber.unwrap_or(0),
                     trackTotal: t.trackCount.unwrap_or(0),
                     discNumber: t.discNumber.unwrap_or(1),
@@ -129,6 +136,7 @@ async fn api_apply(Json(p): Json<ApplyPayload>) -> impl IntoResponse {
     tag.insert_text(ItemKey::AlbumTitle, p.album);
     tag.insert_text(ItemKey::Genre, p.genre);
     tag.insert_text(ItemKey::RecordingDate, p.year);
+    tag.insert_text(ItemKey::Publisher, p.label); // Gravadora/Selo
     tag.insert_text(ItemKey::TrackNumber, p.track_num);
     tag.insert_text(ItemKey::TrackTotal, p.track_total);
     tag.insert_text(ItemKey::DiscNumber, p.disc_num);

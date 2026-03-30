@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Navi-Tagger Native</title>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #0f0f0f; color: #d1d1d1; padding: 2rem; max-width: 750px; margin: 0 auto; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #0f0f0f; color: #d1d1d1; padding: 2rem; max-width: 800px; margin: 0 auto; }
         .card { background: #161616; padding: 25px; border-radius: 10px; border: 1px solid #252525; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         h1 { margin: 0 0 20px 0; font-size: 1.5rem; color: #fff; border-bottom: 1px solid #252525; padding-bottom: 10px; }
         .form-group { margin-bottom: 15px; }
@@ -17,12 +17,12 @@
         button.secondary { background: #2d2d2d; width: auto; }
         #preview { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #252525; }
         .log { margin-top: 15px; font-family: monospace; font-size: 0.75rem; color: #00ff00; background: #000; padding: 10px; border-radius: 4px; display: none; }
-        .cover-box { width: 150px; height: 150px; border-radius: 6px; border: 1px solid #333; object-fit: cover; }
+        .cover-box { width: 180px; height: 180px; border-radius: 8px; border: 1px solid #333; object-fit: cover; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>Navi-Tagger <span style="color:#444">v2.3</span></h1>
+        <h1>Navi-Tagger <span style="color:#444">v2.2.2</span></h1>
         <div class="form-group">
             <label>Arquivo Alvo</label>
             <div class="flex">
@@ -45,12 +45,16 @@
                     <div class="form-group"><label>Álbum</label><input type="text" id="album"></div>
                     <div class="form-group"><label>Gênero</label><input type="text" id="genre"></div>
                     <div class="form-group"><label>Ano</label><input type="text" id="year"></div>
+                    <div class="form-group"><label>Data Completa</label><input type="text" id="fullDate"></div>
+                    <div class="form-group" style="grid-column: span 2;"><label>Gravadora / Selo</label><input type="text" id="label"></div>
                     <div class="form-group"><label>Faixa / Total</label>
                         <div class="flex"><input type="text" id="tNum"> <input type="text" id="tTot"></div>
                     </div>
+                    <div class="form-group"><label>Disco / Total</label>
+                        <div class="flex"><input type="text" id="dNum"> <input type="text" id="dTot"></div>
+                    </div>
                 </div>
             </div>
-            <input type="hidden" id="dNum"> <input type="hidden" id="dTot">
             <button onclick="apply()" style="background:#28a745">Injetar Metadados Totais</button>
         </div>
         <div id="log" class="log"></div>
@@ -67,11 +71,11 @@
             const id = document.getElementById('appleId').value;
             const log = document.getElementById('log');
             log.style.display = 'block';
-            log.innerText = "[JARVIS] Consultando Apple Music...";
+            log.innerText = "[JARVIS] Acessando banco de dados da Apple...";
             
             const r = await fetch(`/api/preview?id=${id}`);
             if(!r.ok) {
-                log.innerText = "[JARVIS] ID não encontrado.";
+                log.innerText = "[JARVIS] Erro: ID inexistente ou falha de rede.";
                 return;
             }
             const d = await r.json();
@@ -81,6 +85,8 @@
             document.getElementById('album').value = d.album;
             document.getElementById('genre').value = d.genre;
             document.getElementById('year').value = d.year;
+            document.getElementById('fullDate').value = d.fullDate;
+            document.getElementById('label').value = d.label;
             document.getElementById('tNum').value = d.trackNumber;
             document.getElementById('tTot').value = d.trackTotal;
             document.getElementById('dNum').value = d.discNumber;
@@ -88,7 +94,7 @@
             document.getElementById('coverArt').src = d.artworkUrl;
             
             document.getElementById('preview').style.display = 'block';
-            log.innerText = "[JARVIS] Dados coletados. Pronto para injeção.";
+            log.innerText = "[JARVIS] Inventário coletado.";
         }
 
         async function apply() {
@@ -99,6 +105,7 @@
                 album: document.getElementById('album').value,
                 genre: document.getElementById('genre').value,
                 year: document.getElementById('year').value,
+                label: document.getElementById('label').value,
                 track_num: document.getElementById('tNum').value,
                 track_total: document.getElementById('tTot').value,
                 disc_num: document.getElementById('dNum').value,
@@ -110,7 +117,7 @@
                 headers: {'Content-Type': 'application/json'}, 
                 body: JSON.stringify(p)
             });
-            document.getElementById('log').innerText = r.ok ? "[JARVIS] Purificação concluída com sucesso." : "[JARVIS] Falha na injeção de hardware.";
+            document.getElementById('log').innerText = r.ok ? "[JARVIS] Purificação concluída. Arquivo assinado." : "[JARVIS] Erro crítico na injeção.";
         }
     </script>
 </body>
