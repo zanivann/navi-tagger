@@ -8,7 +8,7 @@ use lofty::config::WriteOptions;
 use lofty::file::{AudioFile, TaggedFileExt};
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::probe::Probe;
-use lofty::tag::{ItemKey, Tag, TagExt};
+use lofty::tag::{ItemKey, Tag};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
@@ -96,28 +96,27 @@ async fn api_preview(Query(params): Query<PreviewQuery>) -> impl IntoResponse {
     let client = Client::new();
     let url = format!("https://itunes.apple.com/lookup?id={}", params.id);
 
-    if let Ok(res) = client.get(&url).send().await {
-        if let Ok(json) = res.json::<ItunesResponse>().await {
-            if let Some(track) = json.results.first() {
-                let hires_url = track.artworkUrl100.replace("100x100bb", "600x600bb");
-                let year = track.releaseDate.chars().take(4).collect::<String>();
+    if let Ok(res) = client.get(&url).send().await
+        && let Ok(json) = res.json::<ItunesResponse>().await
+        && let Some(track) = json.results.first()
+    {
+        let hires_url = track.artworkUrl100.replace("100x100bb", "600x600bb");
+        let year = track.releaseDate.chars().take(4).collect::<String>();
 
-                return Json(PreviewResponse {
-                    trackName: track.trackName.clone(),
-                    artistName: track.artistName.clone(),
-                    collectionName: track.collectionName.clone(),
-                    artworkUrl: hires_url,
-                    genre: track.primaryGenreName.clone(),
-                    year,
-                    trackNumber: track.trackNumber,
-                    trackTotal: track.trackCount,
-                    discNumber: track.discNumber,
-                    copyright: track.copyright.clone().unwrap_or_default(),
-                    isExplicit: track.trackExplicitness == "explicit",
-                })
-                .into_response();
-            }
-        }
+        return Json(PreviewResponse {
+            trackName: track.trackName.clone(),
+            artistName: track.artistName.clone(),
+            collectionName: track.collectionName.clone(),
+            artworkUrl: hires_url,
+            genre: track.primaryGenreName.clone(),
+            year,
+            trackNumber: track.trackNumber,
+            trackTotal: track.trackCount,
+            discNumber: track.discNumber,
+            copyright: track.copyright.clone().unwrap_or_default(),
+            isExplicit: track.trackExplicitness == "explicit",
+        })
+        .into_response();
     }
     axum::http::StatusCode::NOT_FOUND.into_response()
 }
@@ -174,11 +173,9 @@ async fn api_browse() -> impl IntoResponse {
             .arg("POSIX path of (choose file)")
             .output();
 
-        if let Ok(cmd_res) = output {
-            if cmd_res.status.success() {
-                let path = String::from_utf8_lossy(&cmd_res.stdout).trim().to_string();
-                return path.into_response();
-            }
+        if let Ok(cmd_res) = output && cmd_res.status.success() {
+            let path = String::from_utf8_lossy(&cmd_res.stdout).trim().to_string();
+            return path.into_response();
         }
     }
     String::new().into_response()
