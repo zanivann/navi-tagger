@@ -1,6 +1,6 @@
 {
-  "identifier": "main-capability",
-  "description": "Capacidades nativas para o M4",
+  "identifier": "default",
+  "description": "Capacidades totais para o M4",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -8,6 +8,6 @@
     "core:webview:default",
     "core:menu:default",
     "core:tray:default",
-    "allow-all-commands"
+    "navi-tagger:app-commands"
   ]
 }
