@@ -1,4 +1,3 @@
-// Previne a abertura do console no Windows
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use lofty::config::WriteOptions;
@@ -179,13 +178,11 @@ fn main() {
                 })
                 .build(app)?;
 
-            // Se a janela existir, mostre. Se não, não morra.
             if let Some(main_window) = app.get_webview_window("main") {
                 let _ = main_window.show();
             }
 
             Ok(())
-        })
         })
         .invoke_handler(tauri::generate_handler![
             browse_file, 
