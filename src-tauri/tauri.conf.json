@@ -1,6 +1,6 @@
 {
   "productName": "Navi-Tagger",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "identifier": "com.zanivann.navitagger",
   "build": {
     "beforeDevCommand": "",
@@ -16,8 +16,8 @@
       {
         "label": "main",
         "title": "Navi-Tagger",
-        "width": 800,
-        "height": 650,
+        "width": 1200,
+        "height": 800,
         "resizable": true,
         "fullscreen": false,
         "visible": true

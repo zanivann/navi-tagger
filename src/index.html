@@ -4,88 +4,133 @@
     <meta charset="UTF-8">
     <title>Navi-Tagger Native</title>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #0f0f0f; color: #d1d1d1; padding: 2rem; max-width: 900px; margin: 0 auto; }
-        .card { background: #161616; padding: 25px; border-radius: 10px; border: 1px solid #252525; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { margin: 0 0 20px 0; font-size: 1.5rem; color: #fff; border-bottom: 1px solid #252525; padding-bottom: 10px; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #0f0f0f; color: #d1d1d1; padding: 1.5rem; margin: 0; display: flex; height: 100vh; box-sizing: border-box; gap: 20px; }
+        
+        /* Layout Principal */
+        .sidebar { width: 340px; display: flex; flex-direction: column; gap: 10px; }
+        .main-panel { flex: 1; overflow-y: auto; padding-right: 10px; }
+        
+        .card { background: #161616; padding: 20px; border-radius: 10px; border: 1px solid #252525; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { margin: 0 0 15px 0; font-size: 1.4rem; color: #fff; border-bottom: 1px solid #252525; padding-bottom: 10px; }
+        h2 { margin: 0 0 10px 0; font-size: 1rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Formulários e Botões */
         .form-group { margin-bottom: 10px; }
         label { display: block; font-size: 0.65rem; color: #777; text-transform: uppercase; margin-bottom: 3px; font-weight: 700; }
-        input { width: 100%; padding: 6px; background: #1d1d1d; border: 1px solid #2d2d2d; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 0.85rem; }
-        input:disabled { background: #111; color: #555; border-color: #1a1a1a; }
+        input[type="text"] { width: 100%; padding: 6px; background: #1d1d1d; border: 1px solid #2d2d2d; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 0.85rem; }
+        input[type="text"]:disabled { background: #111; color: #555; border-color: #1a1a1a; }
+        
         .flex { display: flex; gap: 10px; }
-        .grid-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; border-top: 1px solid #252525; padding-top: 20px; }
+        .grid-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; border-top: 1px solid #252525; padding-top: 15px; }
         .column { background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #222; }
-        h3 { margin-top: 0; font-size: 1rem; text-align: center; color: #888; }
-        button { background: #0066cc; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; }
+        
+        button { background: #0066cc; color: #fff; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; }
         button:hover { background: #0052a3; }
         button.secondary { background: #2d2d2d; width: auto; font-size: 0.8rem; }
+        button.success { background: #28a745; }
+        button.success:hover { background: #218838; }
+        button.warning { background: #cc7000; }
+        button.warning:hover { background: #a35900; }
+        
         .cover-box { width: 100%; aspect-ratio: 1; background: #111; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px; object-fit: cover; display: block; }
         .log { margin-top: 15px; font-family: monospace; font-size: 0.75rem; color: #00ff00; background: #000; padding: 10px; border-radius: 4px; display: none; }
-        .info-text { font-size: 0.7rem; color: #aa8800; text-align: center; margin-bottom: 10px; }
+        
+        /* Fila de Arquivos */
+        .file-list { flex: 1; overflow-y: auto; background: #111; border: 1px solid #222; border-radius: 6px; padding: 5px; }
+        .file-item { display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 5px; background: #1a1a1a; border: 1px solid #2d2d2d; border-radius: 4px; cursor: pointer; transition: 0.1s; }
+        .file-item:hover { background: #252525; }
+        .file-item.active { border-color: #0066cc; background: #002244; border-left: 4px solid #0066cc; }
+        .file-item.done { border-color: #28a745; opacity: 0.5; }
+        
+        .file-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #28a745; }
+        .file-info { flex: 1; overflow: hidden; }
+        .file-info .filename { font-size: 0.75rem; font-weight: bold; color: #ccc; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-info .filepath { font-size: 0.6rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Navi-Tagger <span style="color:#444">v2.4.0</span></h1>
-        
-        <div class="form-group">
-            <label>Arquivo Alvo</label>
-            <div class="flex">
-                <input type="text" id="filePath" placeholder="/Caminho/do/arquivo.flac">
-                <button class="secondary" onclick="browse()">Procurar</button>
-            </div>
-        </div>
-        
-        <div class="form-group" style="margin-top:15px">
-            <label>Apple Music ID</label>
-            <div class="flex">
-                <input type="text" id="appleId" placeholder="ID da Faixa">
-                <button class="secondary" onclick="autoSearch()">Auto-Detectar</button>
-                <button class="secondary" onclick="fetchMeta()" style="background:#444">Consultar</button>
-            </div>
-        </div>
 
-        <div class="grid-panel" id="comparisonPanel">
-            <div class="column">
-                <h3 style="color:#a83232">Arquivo Atual</h3>
-                <img id="currCover" class="cover-box" src="" alt="Sem Capa">
-                <div class="form-group"><label>Título</label><input type="text" id="c_title" disabled></div>
-                <div class="form-group"><label>Artista</label><input type="text" id="c_artist" disabled></div>
-                <div class="form-group"><label>Álbum</label><input type="text" id="c_album" disabled></div>
-                <div class="form-group"><label>Gênero</label><input type="text" id="c_genre" disabled></div>
+    <div class="sidebar card">
+        <h2>Fila de Lote</h2>
+        <div class="flex" style="margin-bottom: 10px;">
+            <button onclick="browseFolder()">Escanear Pasta</button>
+            <button class="secondary" onclick="browseFile()">Arquivo Único</button>
+        </div>
+        <div class="file-list" id="queueList">
+            <div style="padding: 15px; text-align: center; color: #555; font-size: 0.8rem;">Aguardando varredura...</div>
+        </div>
+        <button class="success" onclick="applyBatch()" style="padding: 15px; font-size: 1rem; margin-top: 10px;">Executar Lote Marcado</button>
+    </div>
+
+    <div class="main-panel">
+        <div class="card">
+            <h1>Navi-Tagger <span style="color:#444">v3.2.0</span></h1>
+            
+            <div class="form-group">
+                <label>Arquivo Atual</label>
+                <input type="text" id="filePath" placeholder="Selecione um arquivo na fila..." disabled>
+            </div>
+            
+            <div class="form-group" style="margin-top:10px">
+                <label>Apple Music ID</label>
                 <div class="flex">
-                    <div class="form-group" style="flex:1"><label>Ano</label><input type="text" id="c_year" disabled></div>
-                    <div class="form-group" style="flex:1"><label>Faixa</label><input type="text" id="c_track" disabled></div>
-                    <div class="form-group" style="flex:1"><label>Disco</label><input type="text" id="c_disc" disabled></div>
+                    <input type="text" id="appleId" placeholder="ID da Faixa">
+                    <button class="secondary" onclick="autoSearch()">Buscar Novamente</button>
+                    <button class="secondary" onclick="fetchMeta()" style="background:#444">Forçar ID</button>
                 </div>
             </div>
 
-            <div class="column">
-                <h3 style="color:#32a852">Novos Dados (iTunes)</h3>
-                <img id="newCover" class="cover-box" src="" alt="Nova Capa">
-                <div class="form-group"><label>Título</label><input type="text" id="n_title"></div>
-                <div class="form-group"><label>Artista</label><input type="text" id="n_artist"></div>
-                <div class="form-group"><label>Álbum</label><input type="text" id="n_album"></div>
-                <div class="form-group"><label>Gênero</label><input type="text" id="n_genre"></div>
-                <div class="flex">
-                    <div class="form-group" style="flex:1"><label>Ano</label><input type="text" id="n_year"></div>
-                    <div class="form-group" style="flex:1"><label>Faixa</label><input type="text" id="n_track"></div>
-                    <div class="form-group" style="flex:1"><label>Disco</label><input type="text" id="n_disc"></div>
+            <div class="grid-panel" id="comparisonPanel" style="opacity: 0.3; pointer-events: none;">
+                <div class="column">
+                    <h3 style="color:#a83232; margin-top:0; text-align:center; font-size:1rem">Arquivo Original</h3>
+                    <img id="currCover" class="cover-box" src="" alt="Sem Capa">
+                    <div class="form-group"><label>Título</label><input type="text" id="c_title" disabled></div>
+                    <div class="form-group"><label>Artista</label><input type="text" id="c_artist" disabled></div>
+                    <div class="form-group"><label>Álbum</label><input type="text" id="c_album" disabled></div>
+                    <div class="form-group"><label>Gênero</label><input type="text" id="c_genre" disabled></div>
+                    <div class="flex">
+                        <div class="form-group" style="flex:1"><label>Ano</label><input type="text" id="c_year" disabled></div>
+                        <div class="form-group" style="flex:1"><label>Faixa</label><input type="text" id="c_track" disabled></div>
+                        <div class="form-group" style="flex:1"><label>Disco</label><input type="text" id="c_disc" disabled></div>
+                    </div>
                 </div>
-                <input type="hidden" id="n_fullDate"><input type="hidden" id="n_label">
-                <input type="hidden" id="n_trackTot"><input type="hidden" id="n_discTot">
-            </div>
-        </div>
 
-        <div style="margin-top:20px">
-            <div class="info-text">Campos em branco na coluna direita NÃO apagarão os dados originais. O sistema preservará a tag antiga.</div>
-            <button onclick="apply()" style="background:#28a745; padding: 15px; font-size: 1.1rem;">Gravar Alterações</button>
+                <div class="column">
+                    <h3 style="color:#32a852; margin-top:0; text-align:center; font-size:1rem">Matriz de Destino</h3>
+                    <img id="newCover" class="cover-box" src="" alt="Nova Capa">
+                    <div class="form-group"><label>Título</label><input type="text" id="n_title" oninput="syncStagedData()"></div>
+                    <div class="form-group"><label>Artista</label><input type="text" id="n_artist" oninput="syncStagedData()"></div>
+                    <div class="form-group"><label>Álbum</label><input type="text" id="n_album" oninput="syncStagedData()"></div>
+                    <div class="form-group"><label>Gênero</label><input type="text" id="n_genre" oninput="syncStagedData()"></div>
+                    <div class="flex">
+                        <div class="form-group" style="flex:1"><label>Ano</label><input type="text" id="n_year" oninput="syncStagedData()"></div>
+                        <div class="form-group" style="flex:1"><label>Faixa</label><input type="text" id="n_track" oninput="syncStagedData()"></div>
+                        <div class="form-group" style="flex:1"><label>Disco</label><input type="text" id="n_disc" oninput="syncStagedData()"></div>
+                    </div>
+                    <input type="hidden" id="n_fullDate"><input type="hidden" id="n_label">
+                    <input type="hidden" id="n_trackTot"><input type="hidden" id="n_discTot">
+                </div>
+            </div>
+
+            <div class="flex" style="margin-top:20px">
+                <button onclick="applySingle()" class="warning" style="flex: 1;">Gravar Imediatamente</button>
+                <button onclick="markAndNext()" class="success" style="flex: 2; font-size: 1.1rem; padding: 15px;">✓ Aprovar para Lote e Avançar</button>
+            </div>
+            
+            <div id="log" class="log"></div>
         </div>
-        
-        <div id="log" class="log"></div>
     </div>
 
     <script>
         const { invoke } = window.__TAURI__.core;
+        
+        let fileQueue = []; // [{ path, checked, stagedData, done }]
+        let currentIndex = -1;
 
         function logMsg(msg) {
             const l = document.getElementById('log');
@@ -93,11 +138,106 @@
             l.innerText = msg;
         }
 
+        function unlockPanel() {
+            document.getElementById('comparisonPanel').style.opacity = '1';
+            document.getElementById('comparisonPanel').style.pointerEvents = 'auto';
+        }
+
+        // --- SISTEMA DE FILA E LOTE ---
+
+        async function browseFolder() {
+            try {
+                const folder = await invoke('browse_folder');
+                if(!folder) return;
+                
+                logMsg(`Escaneando quadrante: ${folder}`);
+                const files = await invoke('scan_directory', { path: folder });
+                
+                // Inicializa a matriz de objetos da fila
+                fileQueue = files.map(f => ({ path: f, checked: false, stagedData: null, done: false }));
+                currentIndex = -1;
+                renderQueue();
+                logMsg(`Varredura concluída. ${files.length} arquivos detectados.`);
+            } catch (e) { alert(e); }
+        }
+
+        async function browseFile() {
+            try {
+                const path = await invoke('browse_file');
+                if(!path) return;
+                
+                fileQueue = [{ path: path, checked: false, stagedData: null, done: false }];
+                currentIndex = -1;
+                renderQueue();
+                selectFile(0);
+            } catch (e) { alert(e); }
+        }
+
+        function renderQueue() {
+            const q = document.getElementById('queueList');
+            q.innerHTML = '';
+            fileQueue.forEach((item, index) => {
+                const filename = item.path.split('/').pop();
+                const div = document.createElement('div');
+                div.className = `file-item ${item.done ? 'done' : ''} ${index === currentIndex ? 'active' : ''}`;
+                div.id = `qItem_${index}`;
+                
+                // Clicar na div seleciona o arquivo. O clique no checkbox apenas marca.
+                div.onclick = () => selectFile(index);
+                
+                div.innerHTML = `
+                    <input type="checkbox" ${item.checked ? 'checked' : ''} onclick="toggleCheck(${index}, event)" ${item.done ? 'disabled' : ''}>
+                    <div class="file-info">
+                        <div class="filename">${filename}</div>
+                        <div class="filepath">${item.path}</div>
+                    </div>
+                `;
+                q.appendChild(div);
+            });
+        }
+
+        function toggleCheck(index, event) {
+            event.stopPropagation(); // Impede que a linha seja selecionada ao clicar no checkbox
+            fileQueue[index].checked = !fileQueue[index].checked;
+            renderQueue();
+        }
+
+        async function selectFile(index) {
+            if (index < 0 || index >= fileQueue.length) return;
+            
+            currentIndex = index;
+            renderQueue(); // Atualiza a classe ativa
+            
+            const item = document.getElementById(`qItem_${currentIndex}`);
+            if(item) item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            const path = fileQueue[currentIndex].path;
+            document.getElementById('filePath').value = path;
+            
+            // Limpa o painel da direita
+            document.getElementById('appleId').value = "";
+            ['n_title','n_artist','n_album','n_genre','n_year','n_track','n_disc','n_fullDate','n_label','n_trackTot','n_discTot'].forEach(id => document.getElementById(id).value = "");
+            document.getElementById('newCover').removeAttribute('src');
+
+            unlockPanel();
+            await loadCurrent(path);
+            
+            // Se já tiver dados em memória (staged), recarrega eles. Se não, busca no iTunes.
+            if(fileQueue[currentIndex].stagedData) {
+                restoreStagedData();
+                logMsg("Dados da memória de estágio restaurados.");
+            } else {
+                autoSearch(); 
+            }
+        }
+
+        // --- MOTOR DE DADOS ---
+
         async function loadCurrent(path, isReload = false) {
             try {
-                if (!isReload) logMsg("[JARVIS] Lendo estrutura interna do arquivo...");
-                
+                if (!isReload) logMsg("Extraindo estrutura interna...");
                 const tags = await invoke('read_existing_tags', { path });
+                
                 document.getElementById('c_title').value = tags.title;
                 document.getElementById('c_artist').value = tags.artist;
                 document.getElementById('c_album').value = tags.album;
@@ -106,29 +246,11 @@
                 document.getElementById('c_track').value = tags.track_num ? `${tags.track_num}/${tags.track_total}` : "";
                 document.getElementById('c_disc').value = tags.disc_num ? `${tags.disc_num}/${tags.disc_total}` : "";
                 
-                if(tags.cover_base64) {
-                    document.getElementById('currCover').src = tags.cover_base64;
-                } else {
-                    document.getElementById('currCover').removeAttribute('src');
-                }
+                if(tags.cover_base64) document.getElementById('currCover').src = tags.cover_base64;
+                else document.getElementById('currCover').removeAttribute('src');
                 
-                // Controle de mensagens baseado no contexto
-                if (!isReload) {
-                    logMsg("[JARVIS] Arquivo carregado. Aguardando diretrizes.");
-                } else {
-                    logMsg("[JARVIS] Operação cirúrgica concluída. Matriz atualizada com sucesso.");
-                }
+                if (!isReload) logMsg("Arquivo carregado na mesa cirúrgica.");
             } catch (e) { logMsg("[ERRO] " + e); }
-        }
-
-        async function browse() { 
-            try {
-                const path = await invoke('browse_file');
-                if(path) {
-                    document.getElementById('filePath').value = path;
-                    await loadCurrent(path);
-                }
-            } catch (e) { alert(e); }
         }
 
         async function autoSearch() {
@@ -137,16 +259,18 @@
             
             const artist = document.getElementById('c_artist').value;
             const title = document.getElementById('c_title').value;
+            
             let query = (artist && title) ? `${artist} ${title}` : path.split('/').pop().replace(/\.[^/.]+$/, "");
+            query = query.replace(/_/g, " "); 
 
-            logMsg(`[JARVIS] Buscando catálogo por: ${query}`);
+            logMsg(`Contatando satélite da Apple por: ${query}`);
             try {
                 const id = await invoke('search_itunes', { term: query });
                 document.getElementById('appleId').value = id;
-                logMsg(`[JARVIS] ID ${id} detectado.`);
-                fetchMeta();
+                logMsg(`Target lock. ID: ${id}`);
+                await fetchMeta();
             } catch (e) {
-                logMsg("[JARVIS] Heurística falhou: " + e);
+                logMsg("Heurística falhou. Ajuste manualmente.");
             }
         }
 
@@ -169,19 +293,17 @@
                 document.getElementById('n_discTot').value = d.disc_total;
 
                 document.getElementById('newCover').src = d.artwork_url;
-                logMsg("[JARVIS] Dados da Apple carregados no painel de edição.");
-            } catch (e) {
-                logMsg("[ERRO] " + e);
-            }
+                logMsg("Matriz populada. Pronta para aprovação.");
+                
+                syncStagedData(); // Salva automaticamente em memória ao baixar
+            } catch (e) { logMsg("[ERRO] " + e); }
         }
 
-        async function apply() {
-            const path = document.getElementById('filePath').value;
-            if(!path) return logMsg("[JARVIS] Não posso operar o vácuo. Selecione um arquivo.");
-
+        // Sincroniza a tela atual com a memória de estágio do arquivo selecionado
+        function syncStagedData() {
+            if(currentIndex < 0) return;
             const coverSrc = document.getElementById('newCover').getAttribute('src');
-            
-            const data = {
+            fileQueue[currentIndex].stagedData = {
                 title: document.getElementById('n_title').value,
                 artist: document.getElementById('n_artist').value,
                 album: document.getElementById('n_album').value,
@@ -195,14 +317,82 @@
                 disc_total: document.getElementById('n_discTot').value,
                 artwork_url: coverSrc && coverSrc.startsWith('http') ? coverSrc : "" 
             };
+        }
+
+        function restoreStagedData() {
+            const d = fileQueue[currentIndex].stagedData;
+            document.getElementById('n_title').value = d.title;
+            document.getElementById('n_artist').value = d.artist;
+            document.getElementById('n_album').value = d.album;
+            document.getElementById('n_genre').value = d.genre;
+            document.getElementById('n_year').value = d.year;
+            document.getElementById('n_track').value = d.track_num;
+            document.getElementById('n_disc').value = d.disc_num;
+            document.getElementById('n_fullDate').value = d.full_date;
+            document.getElementById('n_label').value = d.label;
+            document.getElementById('n_trackTot').value = d.track_total;
+            document.getElementById('n_discTot').value = d.disc_total;
+            if(d.artwork_url) document.getElementById('newCover').src = d.artwork_url;
+        }
+
+        // --- EXECUÇÃO ---
+
+        // Grava apenas o arquivo atual, agora. Ignora o lote.
+        async function applySingle() {
+            if(currentIndex < 0) return;
+            syncStagedData();
+            const item = fileQueue[currentIndex];
             
-            logMsg("[JARVIS] Iniciando fusão de dados...");
+            logMsg("Injetando metadados no alvo atual...");
             try {
-                await invoke('apply_tags', { path, data });
-                // Passamos 'true' para avisar que é um recarregamento pós-gravação
-                await loadCurrent(path, true); 
-            } catch (e) {
-                logMsg("[JARVIS] Erro crítico na gravação: " + e);
+                await invoke('apply_tags', { path: item.path, data: item.stagedData });
+                item.done = true;
+                item.checked = false;
+                renderQueue();
+                await loadCurrent(item.path, true);
+                logMsg("Cirurgia bem-sucedida.");
+            } catch (e) { logMsg("Erro crítico na fusão: " + e); }
+        }
+
+        // Aprova o arquivo atual (marca o checkbox), salva em memória e pula pro próximo
+        function markAndNext() {
+            if(currentIndex < 0) return;
+            syncStagedData();
+            fileQueue[currentIndex].checked = true;
+            renderQueue();
+            
+            if (currentIndex + 1 < fileQueue.length) {
+                selectFile(currentIndex + 1);
+            } else {
+                logMsg("Fim da fila. Revise ou execute o lote marcado.");
+            }
+        }
+
+        // Executa a injeção em todos os arquivos marcados com checkbox
+        async function applyBatch() {
+            const toProcess = fileQueue.filter(item => item.checked && !item.done && item.stagedData);
+            if(toProcess.length === 0) {
+                return logMsg("Nenhum arquivo aprovado na fila de lote.");
+            }
+
+            logMsg(`Iniciando injeção em lote para ${toProcess.length} arquivos...`);
+
+            for(let item of toProcess) {
+                try {
+                    await invoke('apply_tags', { path: item.path, data: item.stagedData });
+                    item.done = true;
+                    item.checked = false;
+                } catch (e) {
+                    logMsg(`[ERRO] Falha no alvo ${item.path}: ${e}`);
+                }
+            }
+            
+            renderQueue();
+            logMsg("Lote concluído. Matrizes atualizadas.");
+            
+            // Recarrega o atual para refletir as mudanças caso ele tenha feito parte do lote
+            if(fileQueue[currentIndex] && fileQueue[currentIndex].done) {
+                loadCurrent(fileQueue[currentIndex].path, true);
             }
         }
     </script>

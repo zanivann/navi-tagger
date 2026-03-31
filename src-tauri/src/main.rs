@@ -9,6 +9,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+use walkdir::WalkDir;
 
 #[derive(Serialize, Deserialize)]
 pub struct FullMetadata {
@@ -68,6 +69,39 @@ async fn browse_file() -> Result<String, String> {
         .output()
         .map_err(|e| e.to_string())?;
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+#[tauri::command]
+async fn browse_folder() -> Result<String, String> {
+    let out = Command::new("osascript")
+        .arg("-e")
+        .arg("POSIX path of (choose folder)")
+        .output()
+        .map_err(|e| e.to_string())?;
+    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+#[tauri::command]
+async fn scan_directory(path: String) -> Result<Vec<String>, String> {
+    let mut files = Vec::new();
+    let valid_extensions = ["flac", "mp3", "m4a", "wav", "aac"];
+
+    for entry in WalkDir::new(&path).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if p.is_file() {
+            if let Some(ext) = p.extension().and_then(|s| s.to_str()) {
+                if valid_extensions.contains(&ext.to_lowercase().as_str()) {
+                    files.push(p.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+    
+    if files.is_empty() {
+        return Err("Nenhum arquivo de áudio encontrado nesta pasta ou subpastas.".into());
+    }
+    
+    Ok(files)
 }
 
 #[tauri::command]
@@ -217,6 +251,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             browse_file, 
+            browse_folder,
+            scan_directory,
             read_existing_tags, 
             search_itunes, 
             get_preview, 

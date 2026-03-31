@@ -2016,7 +2016,7 @@ dependencies = [
 
 [[package]]
 name = "navi-tagger"
-version = "2.4.0"
+version = "3.0.0"
 dependencies = [
  "base64 0.22.1",
  "lofty",
@@ -2025,6 +2025,7 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "walkdir",
 ]
 
 [[package]]
