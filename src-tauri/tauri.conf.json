@@ -1,11 +1,10 @@
 {
   "productName": "Navi-Tagger",
-  "version": "2.3.8",
+  "version": "2.3.9",
   "identifier": "com.zanivann.navitagger",
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "",
-    "devUrl": "http://localhost:1420",
     "frontendDist": "../src"
   },
   "app": {
