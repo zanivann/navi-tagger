@@ -149,7 +149,6 @@ fn main() {
             use tauri::tray::{TrayIconBuilder, TrayIconEvent};
             use tauri::Manager;
 
-            // Criar itens de menu
             let show_i = MenuItem::with_id(app, "show", "Mostrar Interface", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Fechar", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
@@ -157,14 +156,14 @@ fn main() {
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .show_menu_on_left_click(false) // Deixamos o clique esquerdo para abrir a janela
                 .on_menu_event(|app, event| {
                     match event.id.as_ref() {
                         "quit" => { app.exit(0); }
                         "show" => {
-                            let window = app.get_webview_window("main").unwrap();
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
                         }
                         _ => {}
                     }
@@ -180,11 +179,13 @@ fn main() {
                 })
                 .build(app)?;
 
-            // FORÇAR APARIÇÃO NA INICIALIZAÇÃO
-            let main_window = app.get_webview_window("main").unwrap();
-            main_window.show().unwrap();
+            // Se a janela existir, mostre. Se não, não morra.
+            if let Some(main_window) = app.get_webview_window("main") {
+                let _ = main_window.show();
+            }
 
             Ok(())
+        })
         })
         .invoke_handler(tauri::generate_handler![
             browse_file, 
