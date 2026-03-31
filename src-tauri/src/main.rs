@@ -52,7 +52,7 @@ struct TrackInfo {
 }
 
 #[tauri::command]
-async fn browse_file() -> Result<String, String> {
+pub async fn browse_file() -> Result<String, String> {
     let out = Command::new("osascript")
         .arg("-e")
         .arg("POSIX path of (choose file)")
@@ -62,7 +62,7 @@ async fn browse_file() -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn read_existing_tags(path: String) -> Result<ExistingTags, String> {
+pub async fn read_existing_tags(path: String) -> Result<ExistingTags, String> {
     let f = Probe::open(&path).map_err(|e| e.to_string())?.read().map_err(|e| e.to_string())?;
     if let Some(tag) = f.primary_tag() {
         return Ok(ExistingTags {
@@ -74,7 +74,7 @@ async fn read_existing_tags(path: String) -> Result<ExistingTags, String> {
 }
 
 #[tauri::command]
-async fn search_itunes(term: String) -> Result<String, String> {
+pub async fn search_itunes(term: String) -> Result<String, String> {
     let c = Client::new();
     let url = format!("https://itunes.apple.com/search?term={}&entity=song&limit=1", term);
     let res = c.get(&url).send().await.map_err(|e| e.to_string())?
@@ -87,7 +87,7 @@ async fn search_itunes(term: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn get_preview(id: String) -> Result<FullMetadata, String> {
+pub async fn get_preview(id: String) -> Result<FullMetadata, String> {
     let c = Client::new();
     let url = format!("https://itunes.apple.com/lookup?id={}", id);
     let res = c.get(&url).send().await.map_err(|e| e.to_string())?
@@ -114,7 +114,7 @@ async fn get_preview(id: String) -> Result<FullMetadata, String> {
 }
 
 #[tauri::command]
-async fn apply_tags(path: String, data: FullMetadata) -> Result<(), String> {
+pub async fn apply_tags(path: String, data: FullMetadata) -> Result<(), String> {
     let c = Client::new();
     let img = c.get(&data.artwork_url).send().await.map_err(|e| e.to_string())?
         .bytes().await.map_err(|e| e.to_string())?;
