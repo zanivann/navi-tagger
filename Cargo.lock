@@ -2016,7 +2016,7 @@ dependencies = [
 
 [[package]]
 name = "navi-tagger"
-version = "2.3.8"
+version = "2.3.9"
 dependencies = [
  "lofty",
  "reqwest",
