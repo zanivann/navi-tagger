@@ -1,0 +1,12 @@
+{
+  "identifier": "main-capability",
+  "description": "Capacidades nativas essenciais",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:webview:default",
+    "core:menu:default",
+    "core:tray:default"
+  ]
+}

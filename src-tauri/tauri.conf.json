@@ -1,6 +1,6 @@
 {
   "productName": "Navi-Tagger",
-  "version": "2.3.7",
+  "version": "2.3.8",
   "identifier": "com.zanivann.navitagger",
   "build": {
     "beforeDevCommand": "",
