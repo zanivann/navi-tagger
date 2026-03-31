@@ -1,5 +1,5 @@
 {
-  "identifier": "app-commands",
+  "identifier": "allow-all-commands",
   "commands": {
     "allow": [
       "browse_file",
