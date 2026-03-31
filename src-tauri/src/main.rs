@@ -4,10 +4,11 @@ use lofty::config::WriteOptions;
 use lofty::file::{AudioFile, TaggedFileExt};
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::probe::Probe;
-use lofty::tag::{ItemKey, Tag};
+use lofty::tag::{ItemKey, Tag, Accessor};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 
 #[derive(Serialize, Deserialize)]
 pub struct FullMetadata {
@@ -29,6 +30,14 @@ pub struct FullMetadata {
 pub struct ExistingTags {
     pub title: String,
     pub artist: String,
+    pub album: String,
+    pub genre: String,
+    pub year: String,
+    pub track_num: String,
+    pub track_total: String,
+    pub disc_num: String,
+    pub disc_total: String,
+    pub cover_base64: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -63,14 +72,32 @@ async fn browse_file() -> Result<String, String> {
 
 #[tauri::command]
 async fn read_existing_tags(path: String) -> Result<ExistingTags, String> {
-    let f = Probe::open(&path).map_err(|e| e.to_string())?.read().map_err(|e| e.to_string())?;
+    let mut f = Probe::open(&path).map_err(|e| e.to_string())?.read().map_err(|e| e.to_string())?;
+    
+    let mut tags = ExistingTags {
+        title: "".into(), artist: "".into(), album: "".into(), genre: "".into(),
+        year: "".into(), track_num: "".into(), track_total: "".into(),
+        disc_num: "".into(), disc_total: "".into(), cover_base64: None,
+    };
+
     if let Some(tag) = f.primary_tag() {
-        return Ok(ExistingTags {
-            title: tag.get_string(&ItemKey::TrackTitle).unwrap_or("").to_string(),
-            artist: tag.get_string(&ItemKey::TrackArtist).unwrap_or("").to_string(),
-        });
+        tags.title = tag.title().as_deref().unwrap_or("").to_string();
+        tags.artist = tag.artist().as_deref().unwrap_or("").to_string();
+        tags.album = tag.album().as_deref().unwrap_or("").to_string();
+        tags.genre = tag.genre().as_deref().unwrap_or("").to_string();
+        tags.year = tag.get_string(&ItemKey::RecordingDate).unwrap_or("").to_string();
+        tags.track_num = tag.track().map(|v| v.to_string()).unwrap_or_default();
+        tags.track_total = tag.track_total().map(|v| v.to_string()).unwrap_or_default();
+        tags.disc_num = tag.disk().map(|v| v.to_string()).unwrap_or_default();
+        tags.disc_total = tag.disk_total().map(|v| v.to_string()).unwrap_or_default();
+
+        if let Some(pic) = tag.pictures().first() {
+            let b64 = STANDARD.encode(pic.data());
+            let mime = pic.mime_type().unwrap_or(&MimeType::Jpeg).as_str();
+            tags.cover_base64 = Some(format!("data:{};base64,{}", mime, b64));
+        }
     }
-    Ok(ExistingTags { title: "".into(), artist: "".into() })
+    Ok(tags)
 }
 
 #[tauri::command]
@@ -115,26 +142,30 @@ async fn get_preview(id: String) -> Result<FullMetadata, String> {
 
 #[tauri::command]
 async fn apply_tags(path: String, data: FullMetadata) -> Result<(), String> {
-    let c = Client::new();
-    let img = c.get(&data.artwork_url).send().await.map_err(|e| e.to_string())?
-        .bytes().await.map_err(|e| e.to_string())?;
-    
     let mut f = Probe::open(&path).map_err(|e| e.to_string())?.read().map_err(|e| e.to_string())?;
-    f.clear();
     
-    let mut tag = Tag::new(f.file_type().primary_tag_type());
-    tag.insert_text(ItemKey::TrackTitle, data.title);
-    tag.insert_text(ItemKey::TrackArtist, data.artist);
-    tag.insert_text(ItemKey::AlbumTitle, data.album);
-    tag.insert_text(ItemKey::Genre, data.genre);
-    tag.insert_text(ItemKey::RecordingDate, data.year);
-    tag.insert_text(ItemKey::Publisher, data.label);
-    tag.insert_text(ItemKey::TrackNumber, data.track_num);
-    tag.insert_text(ItemKey::TrackTotal, data.track_total);
-    tag.insert_text(ItemKey::DiscNumber, data.disc_num);
-    tag.insert_text(ItemKey::DiscTotal, data.disc_total);
+    let tag_type = f.file_type().primary_tag_type();
+    let mut tag = f.primary_tag_mut().cloned().unwrap_or_else(|| Tag::new(tag_type));
     
-    tag.push_picture(Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Jpeg), None, img.to_vec()));
+    if !data.title.is_empty() { tag.insert_text(ItemKey::TrackTitle, data.title); }
+    if !data.artist.is_empty() { tag.insert_text(ItemKey::TrackArtist, data.artist); }
+    if !data.album.is_empty() { tag.insert_text(ItemKey::AlbumTitle, data.album); }
+    if !data.genre.is_empty() { tag.insert_text(ItemKey::Genre, data.genre); }
+    if !data.year.is_empty() { tag.insert_text(ItemKey::RecordingDate, data.year); }
+    if !data.label.is_empty() { tag.insert_text(ItemKey::Publisher, data.label); }
+    if !data.track_num.is_empty() { tag.insert_text(ItemKey::TrackNumber, data.track_num); }
+    if !data.track_total.is_empty() { tag.insert_text(ItemKey::TrackTotal, data.track_total); }
+    if !data.disc_num.is_empty() { tag.insert_text(ItemKey::DiscNumber, data.disc_num); }
+    if !data.disc_total.is_empty() { tag.insert_text(ItemKey::DiscTotal, data.disc_total); }
+    
+    if !data.artwork_url.is_empty() {
+        let c = Client::new();
+        let img = c.get(&data.artwork_url).send().await.map_err(|e| e.to_string())?
+            .bytes().await.map_err(|e| e.to_string())?;
+        
+        tag.remove_picture_type(PictureType::CoverFront);
+        tag.push_picture(Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Jpeg), None, img.to_vec()));
+    }
     
     f.insert_tag(tag);
     f.save_to_path(&path, WriteOptions::new()).map_err(|e| e.to_string())?;
