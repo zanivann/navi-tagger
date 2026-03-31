@@ -1,20 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissões totais para o Navi-Tagger",
-  "windows": [
-    "main"
-  ],
+  "description": "Capacidades padrão para o Navi-Tagger",
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "core:window:default",
     "core:webview:default",
     "core:menu:default",
     "core:tray:default",
-    "allow-browse-file",
-    "allow-read-existing-tags",
-    "allow-search-itunes",
-    "allow-get-preview",
-    "allow-apply-tags"
+    "app-commands"
   ]
 }

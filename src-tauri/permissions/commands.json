@@ -1,0 +1,13 @@
+{
+  "identifier": "app-commands",
+  "description": "Permite a execução dos comandos nativos do Navi-Tagger",
+  "commands": {
+    "allow": [
+      "browse_file",
+      "read_existing_tags",
+      "search_itunes",
+      "get_preview",
+      "apply_tags"
+    ]
+  }
+}
