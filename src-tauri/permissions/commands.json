@@ -1,6 +1,5 @@
 {
   "identifier": "app-commands",
-  "description": "Permite a execução dos comandos nativos do Navi-Tagger",
   "commands": {
     "allow": [
       "browse_file",
